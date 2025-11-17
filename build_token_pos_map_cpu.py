@@ -19,7 +19,7 @@ OUTPATH = "token_pos_map.json" # output file
 MIN_OCCURENCES = 3 # if a token occurs fewer than 3 times in the entire dataset, POS tag won't be assigned 
 
 def build_token_pos_mapping(
-        nun_words: int = NUM_WORDS_TO_PROCESS, 
+        num_words: int = NUM_WORDS_TO_PROCESS, 
         output_path: str = OUTPATH,
         min_occurences: int = MIN_OCCURENCES, 
         dataset_name: str = "wikitext",
@@ -47,25 +47,44 @@ def build_token_pos_mapping(
     tokenizer = GPT2TokenizerFast.from_pretrained(tokenizer_name) # Load GPT-2 tokenizer 
 
     try:
-        nlp = spacy.load(spacy_model, disable=['ner', 'parser', 'lemmatizer']) # disable ner/parser/lemmatizer part to keep it light
-    except OSError:
+        # Load spacy model "en_core_web_sm"
+        nlp = spacy.load(spacy_model, disable=['ner', 'parser', 'lemmatizer']) # disable ner/parser/lemmatizer functionality. We only need its POS tokenization feature 
+    except OSError: # Catches error if spacy model isn't installed 
         print(f"spaCy model '{spacy_model}' not found. Downloading...")
         import subprocess
         # Use the current Python interpreter (from venv) instead of system python
-        subprocess.run([sys.executable, "-m", "spacy", "download", spacy_model], check=True)
+        # Download the missing model. 
+        subprocess.run([sys.executable, "-m", "spacy", "download", spacy_model], check=True) # sys.executable ensures the python interpreter from the current virtual environment 
         nlp = spacy.load(spacy_model, disable=["ner", "parser", "lemmatizer"])
     
     print(f"Loading dataset '{dataset_name}' ({dataset_config})...")
 
-    # Use HuggingFace datasets to get dataset split 
-    ds = load_dataset(dataset_name, dataset_config, split="train")
+    # load the dataset using the HuggingFace datasets library (We choose the Wikitext dataset)
+    # We also want only the training portion of the dataset 
+    ds = load_dataset(dataset_name, dataset_config, split="train") # wikitext-2-raw-v1 is the configuration/subset of the dataset (wikitext) that we want
 
     # Counter and stats variables 
-    token_pos_counts = defaultdict(Counter) # counts POS tags for a seen token id 
+    token_pos_counts = defaultdict(Counter) # count part-of-speech tags for each token 
+    """
+    Example 
+        token_pos_counts["running"]["VERB"] += 1
+        token_pos_counts["running"]["NOUN"] += 1
+        Result: {"running": Counter({"VERB": 1, "NOUN": 1})}
+    """
     processed_words = 0 # how many single-token words have been processed 
     skipped_empty = 0 # empty text counted 
-    skipped_multitoken = 0 # count of words that are tokenized into > 1 token and were skipped 
+    skipped_multitoken = 0 # count of words that are tokenized into > 1 token and were skipped. Example: "New York" or "ice cream"
 
+    print(f"Processing up to {num_words:,} words...")
     
+    # iterate through each text item in ds (the dataset)
+    for ex in tqdm(ds, desc="Processing dataset"): # tqdm shows a progress bar with the description "Processing dataset"
+        text = ex[text].strip() # removes white space from current text item 
+        if not text: 
+            skipped_empty += 1 
+            continue
+
+        
+
     
     
