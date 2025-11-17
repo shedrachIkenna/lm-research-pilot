@@ -56,6 +56,16 @@ def build_token_pos_mapping(
         nlp = spacy.load(spacy_model, disable=["ner", "parser", "lemmatizer"])
     
     print(f"Loading dataset '{dataset_name}' ({dataset_config})...")
+
+    # Use HuggingFace datasets to get dataset split 
     ds = load_dataset(dataset_name, dataset_config, split="train")
 
+    # Counter and stats variables 
+    token_pos_counts = defaultdict(Counter) # counts POS tags for a seen token id 
+    processed_words = 0 # how many single-token words have been processed 
+    skipped_empty = 0 # empty text counted 
+    skipped_multitoken = 0 # count of words that are tokenized into > 1 token and were skipped 
+
+    
+    
     
