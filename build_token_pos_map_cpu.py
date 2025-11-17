@@ -26,4 +26,20 @@ def build_token_pos_mapping(
         dataset_config: str = "wikitext-2-raw-v1",
         tokenizer_name: str = "gpt2",
         spacy_model: str = "en_core_web_sm"
-)
+):
+    """
+    Maps token to POS from dataset 
+    Only maps tokens that represents complete words 
+
+    Args: 
+        num_words: Number of words to process (defined default as 50k)
+        output_path: file path to save the mapping JSON file 
+        min_occurences: Minimum occurences required to assign a POS 
+        dataset_name: HuggingFace dataset name 
+        dataset_config: Dataset configuration 
+        tokenizer_name: HuggingFace tokenizer name 
+        spacy_model: spaCy model to use 
+
+    Returns: 
+        dict: token_id -> POS mapping (Example: "513": "NUM","4960": "ADJ","6578": "VERB") 
+    """
