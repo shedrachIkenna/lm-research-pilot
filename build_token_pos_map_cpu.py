@@ -26,7 +26,7 @@ def build_token_pos_mapping(
         dataset_config: str = "wikitext-2-raw-v1",
         tokenizer_name: str = "gpt2",
         spacy_model: str = "en_core_web_sm"
-):
+    ):
     """
     Maps token to POS from dataset 
     Only maps tokens that represents complete words 
@@ -43,3 +43,19 @@ def build_token_pos_mapping(
     Returns: 
         dict: token_id -> POS mapping (Example: "513": "NUM","4960": "ADJ","6578": "VERB") 
     """
+    print(f"Loading tokenizer '{tokenizer_name}' and spaCy model '{spacy_model}'...")
+    tokenizer = GPT2TokenizerFast.from_pretrained(tokenizer_name) # Load GPT-2 tokenizer 
+
+    try:
+        nlp = spacy.load(spacy_model, disable=['ner', 'parser', 'lemmatizer']) # disable ner/parser/lemmatizer part to keep it light
+    except OSError:
+        print(f"spaCy model '{spacy_model}' not found. Downloading...")
+        import subprocess
+        # Use the current Python interpreter (from venv) instead of system python
+        subprocess.run([sys.executable, "-m", "spacy", "download", spacy_model], check=True)
+        nlp = spacy.load(spacy_model, disable=["ner", "parser", "lemmatizer"])
+    
+    print(f"Loading dataset '{dataset_name}' ({dataset_config})...")
+    ds = load_dataset(dataset_name, dataset_config, split="train")
+
+    
