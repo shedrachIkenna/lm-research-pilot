@@ -84,7 +84,56 @@ def build_token_pos_mapping(
             skipped_empty += 1 
             continue
 
+        # Process text with spacy 
+        doc = nlp(text)
+
+        for token in doc: 
+            # skip whitespace, puntuation and symbols 
+            if token.is_space or token.is_punct or token.pos_ == "SYM": 
+                continue
+
+            word = token.text 
+            pos = token.pos_
+
+            # Additional filter: skip tokens that are clearly not linguistic content
+            # (catches cases where spaCy mistagged punctuation/symbols as content words)
+            if word in '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~' or word.strip() == '':
+                continue
+
+            # Tokenize the word to get token IDs
+            # CRITICAL: Add space prefix for GPT-2 tokenizer to match vocab correctly
+            word_with_space = " " + word # This is because GPT-2's tokenizer was trained on text where most words have a leading space.
+            toks = tokenizer(word_with_space, add_special_tokens=False) # returns a dictionary with multiple fields 
+            """
+            Example:
+                toks = {
+                    "input_ids": [3797],           -> The actual token IDs
+                    "attention_mask": [1],         -> Mask for padding (not used here)
+                    .
+                    .
+                    .
+                    possibly other fields...
+                }
+            """
+            ids = toks["input_ids"] # extracts just the list of token IDs from that dictionary.
+
+            # Only map the word if it is represented by a single token 
+            if len(ids) == 1:
+                tid = ids[0]
+                token_pos_counts[tid][pos] += 1 
+                processed_words += 1 
+            else: 
+                # increase count of skipped subwords (words that are split into subwords)
+                skipped_multitoken += 1 
+            
+            if processed_words >= num_words:
+                break
+
+        if processed_words >= num_words:
+            break
         
+
+
 
     
     
