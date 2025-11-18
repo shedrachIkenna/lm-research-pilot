@@ -84,7 +84,7 @@ def build_token_pos_mapping(
             skipped_empty += 1 
             continue
 
-        # Process text with spacy 
+        # Process text with spacy to get POS for each token 
         doc = nlp(text)
 
         for token in doc: 
@@ -92,8 +92,8 @@ def build_token_pos_mapping(
             if token.is_space or token.is_punct or token.pos_ == "SYM": 
                 continue
 
-            word = token.text 
-            pos = token.pos_
+            word = token.text # Extract the token's word text 
+            pos = token.pos_ # Extracts the token's POS tag 
 
             # Additional filter: skip tokens that are clearly not linguistic content
             # (catches cases where spaCy mistagged punctuation/symbols as content words)
@@ -117,7 +117,8 @@ def build_token_pos_mapping(
             """
             ids = toks["input_ids"] # extracts just the list of token IDs from that dictionary.
 
-            # Only map the word if it is represented by a single token 
+            # record the POS only if the word is a single token. skip multi-token words and subwords 
+            # subwords and multi-token words usually have len(ids) > 1
             if len(ids) == 1:
                 tid = ids[0]
                 token_pos_counts[tid][pos] += 1 
@@ -126,12 +127,73 @@ def build_token_pos_mapping(
                 # increase count of skipped subwords (words that are split into subwords)
                 skipped_multitoken += 1 
             
-            if processed_words >= num_words:
+            if processed_words >= num_words: # Stops processing words once the target number of words is reached 
                 break
 
-        if processed_words >= num_words:
+        if processed_words >= num_words: # Stops processing words once the target number of words is reached 
             break
+    
+    # final token -> POS mappings with minimun occurence threshold 
+    token_to_pos = {} # # Dictionary where {token id -> Pos tags} will be saved 
+    low_count_tokens = 0 # Counter for tokens that don't meet the minimum occurence threshold criteria 
+
+    for tid, counter in token_pos_counts.items():
+        total_count = sum(counter.values()) # Iterates through each token ID and calculates how many times it was seen 
+
+        # if the token appears enough times, find its most common POS tag 
+        if total_count >= min_occurences:
+            most_common_pos, count = counter.most_common(1)[0]
+
+            # Calculates confidence: calculates the percentage of times this token had its most common POS 
+            confidence = count / total_count
+
+            # includes mappings only if confidence exceeds 50%, otherwise count is as low confidence count (don't map)
+            if confidence > 0.5: 
+                token_to_pos[int(tid)] = most_common_pos
+            else:
+                low_count_tokens += 1 
         
+        else:
+            low_count_tokens += 1 
+    
+    # Save output to file 
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    
+
+    # Save mappings as json file 
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(token_to_pos, f, indent=2)
+
+    # Summary of processed statistics 
+    print(f"\n{'='*60}")
+    print(f"✓ Saved token->POS map to {output_path}")
+    print(f"  Processed single-token words: {processed_words:,}")
+    print(f"  Unique tokens with POS: {len(token_to_pos):,}")
+    print(f"  Tokens below threshold or low confidence: {low_count_tokens}")
+    print(f"  Multi-token words skipped: {skipped_multitoken:,}")
+    print(f"  Empty lines skipped: {skipped_empty}")
+    print(f"{'='*60}\n")
+
+    # Show sample mappings grouped by POS
+    if token_to_pos:
+        print("Sample token->POS mappings (complete words only):")
+        
+        # Group by POS for better visualization
+        pos_to_tokens = defaultdict(list)
+        for tid, pos in token_to_pos.items():
+            pos_to_tokens[pos].append(tid)
+        
+        # Show samples from each POS category
+        for pos in sorted(pos_to_tokens.keys())[:8]:  # Show first 8 POS categories
+            tokens = pos_to_tokens[pos][:5]  # Show up to 5 examples per POS
+            print(f"\n  {pos:8s}:", end="")
+            for tid in tokens:
+                token_str = tokenizer.decode([tid]).strip()
+                print(f" {token_str}", end=",")
+    
+    print("\n")
+    return token_to_pos
 
 
 
