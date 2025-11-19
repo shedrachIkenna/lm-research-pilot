@@ -219,6 +219,14 @@ def main():
         help=f"Minimum occurences to assign POS (default: {MIN_OCCURENCES})"
     )
 
+    # Adds --dataset flag to let user choose a different dataset 
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="wikitext",
+        help="HuggingFace dataset name (default: wikitext)"
+    )
+
     
 
 
