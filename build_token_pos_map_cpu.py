@@ -211,6 +211,16 @@ def main():
         help=f"Number of single-token words to process (default: {NUM_WORDS_TO_PROCESS:,})"
     )
 
+    # Adds --output flag to specify where to save the JSON file 
+    parser.add_argument(
+        "--min-occurrences",
+        type=int, 
+        default=MIN_OCCURENCES,
+        help=f"Minimum occurences to assign POS (default: {MIN_OCCURENCES})"
+    )
+
+    
+
 
     
     
