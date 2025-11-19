@@ -9,9 +9,27 @@ A lightweight, reproducible experimental pipeline designed to analyze the traini
 
 ## Research Motivation
 
-Inspired by Papadimitriou et al. (2024) on vocabulary embeddings, this project is a small-scale testbed to quantify the "phase change" where a model moves from random initialization to structured linguistic representation.
+Inspired by Papadimitriou et al. (2024) on vocabulary embeddings, This project implements a complete, replicable research pipeline for studying how linguistic structure emerges inside the embedding space of small transformer language models.
 
-Unlike standard training pipelines that only save the final model, this framework implements high-frequency checkpointing and a dedicated analysis suite to probe the model's internal state at granular intervals.
+This pipeline is designed to run entirely on CPU, making it suitable for low-resource experimentation, teaching, and conceptual replication studies.
+
+---
+
+## Research Questions
+
+This project provides a small-scale framework for investigating:
+
+- When does linguistic structure emerge during training?
+    - Track probing accuracy over time.
+- Which POS categories form clusters earliest?
+    - Compare early and late checkpoints
+- Is the embedding structure linearly separable?
+    - k-NN vs logistic regression probes.
+- How do individual tokens evolve?
+    - Token trajectory visualization.
+- Do semantic neighborhoods stabilize?
+    - Nearest-neighbor tracking over training.
+
 
 ---
 
@@ -29,7 +47,7 @@ The repository is organized into three stages:
 
 ### 2. Dynamics Training
 
-**Script:** `src/train_cpu.py`  
+**Script:** `train_cpu.py`  
 
 - Architecture: decoder-only Transformer (GPT-2 style) using Hugging Face.  
 - Checkpointing: custom Trainer config to save model snapshots at specified intervals (e.g., every 50 steps) to capture early dynamics.  
@@ -37,7 +55,7 @@ The repository is organized into three stages:
 
 ### 3. Latent Space Analysis
 
-**Script:** `src/analysis.py`  
+**Script:** `analysis.py`  
 
 Extracts `W_E` (embedding matrices) from checkpoints and computes:
 
@@ -47,6 +65,7 @@ Extracts `W_E` (embedding matrices) from checkpoints and computes:
 - Intra/inter-class cosine similarity to quantify semantic-region density.
 
 ---
+
 
 ## 🚀 Quick Start
 
