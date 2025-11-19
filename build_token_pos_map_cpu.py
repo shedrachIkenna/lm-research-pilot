@@ -235,6 +235,9 @@ def main():
         help="Dataset configuration (default: wikitext-2-raw-v1)"
     )
 
+    # parses all command-line arguments provided by the user. Returns an object where each argument is an attribute (e.g., args.num_words, args.output)
+    args = parser.parse_args()
+
 
     
     
