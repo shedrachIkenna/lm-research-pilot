@@ -238,6 +238,18 @@ def main():
     # parses all command-line arguments provided by the user. Returns an object where each argument is an attribute (e.g., args.num_words, args.output)
     args = parser.parse_args()
 
+    # Call the main function (build_token_pos_mapping) with the parsed arguments
+    build_token_pos_mapping(
+        num_words=args.num_words,
+        output_path=args.output,
+        min_occurrences=args.min_occurrences,
+        dataset_name=args.dataset,
+        dataset_config=args.dataset_config,
+    )
+
+    if __name__ == "__main__":
+        main()
+
 
     
     
