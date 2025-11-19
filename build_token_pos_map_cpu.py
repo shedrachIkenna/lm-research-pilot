@@ -227,7 +227,13 @@ def main():
         help="HuggingFace dataset name (default: wikitext)"
     )
 
-    
+    # Adds --dataset-config flag for dataset configurations options 
+    parser.add_argument(
+        "--dataset-config",
+        type=str, 
+        default="wikitext-2-raw-v1", 
+        help="Dataset configuration (default: wikitext-2-raw-v1)"
+    )
 
 
     
