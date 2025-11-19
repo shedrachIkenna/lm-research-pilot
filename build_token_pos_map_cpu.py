@@ -203,6 +203,14 @@ def main():
         description = "Build token-to-POS mappings for linguistic analysis (Complete words only)"
     )
 
+    # Add --num-words flag. User can run build_token_pos_map_cpu --num-words 50000 to override the default 
+    parser.add_argument(
+        "--num-words",
+        type=int, 
+        default=NUM_WORDS_TO_PROCESS,
+        help=f"Number of single-token words to process (default: {NUM_WORDS_TO_PROCESS:,})"
+    )
+
 
     
     
