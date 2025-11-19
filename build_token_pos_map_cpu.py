@@ -12,6 +12,7 @@ from datasets import load_dataset
 from transformers import GPT2TokenizerFast
 import spacy 
 from tqdm import tqdm
+import argparse
 
 # CPU/pilot-friendly settings 
 NUM_WORDS_TO_PROCESS = 50_000 
@@ -195,6 +196,12 @@ def build_token_pos_mapping(
     print("\n")
     return token_to_pos
 
+def main():
+    # Python command-line interface setup
+    # Create an argument parser. The description appears when the user runs build_token_pos_map_cpu.py --help 
+    parser = argparse.ArgumentParser(
+        description = "Build token-to-POS mappings for linguistic analysis (Complete words only)"
+    )
 
 
     
