@@ -84,4 +84,37 @@ def save_training_metadata(output_dir: str, config: GPT2Config, args: TrainingAr
 
     print(f" Saved training metadata to {metadata_path}")
     
-    
+    def verify_tokenizer_compactibility(tokenizer_name: str = "gpt2"):
+        """
+        Verify that the tokenizer matches the one used to create token_pos_map
+        """
+
+        tokenizer = GPT2TokenizerFast.from_pretrained(tokenizer_name)
+
+        # Check if metadata exists 
+        if os.path.exists("token_pos_map_metadata.json"):
+            with open("token_pos_map_metadata.json") as f:
+                metadata = json.load(f)
+
+            original_tokenizer = metadata.get("tokenizer_name")
+            original_vocab_size = metadata.get("vocab_size")
+
+            # Verify match 
+            if original_tokenizer != tokenizer_name:
+                raise ValueError(
+                    f"Tokenizer mismatch! "
+                    f"POS map used '{original_tokenizer}' tokenizer"
+                    f"but you're using '{tokenizer_name}' "
+                )
+            
+            if original_vocab_size != tokenizer.vocab_size:
+                raise ValueError(
+                    f"Vocab size mismatch! "
+                    f"POS map used vocab_size={original_vocab_size} "
+                    f"but current tokenizer has {tokenizer.vocab_size}"
+                )
+            
+            print("Tokenizer verified: matches POS map")
+        
+        return tokenizer
+            
