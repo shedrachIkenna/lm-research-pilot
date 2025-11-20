@@ -178,6 +178,22 @@ def load_and_prepare_dataset(dataset_name: str, dataset_config: str, num_samples
 
         return result # Returns the dictionary containing chunked input_ids and labels
 
+    # Apply the group_texts function 
+    print(f"Grouping texts into blocks of size {block_size}...")
+    lm_dataset = tokenized.map(
+        group_texts,
+        batched=True,
+        batch_size = 1000, 
+        remove_columns=tokenized.column_names,
+        desc="Grouping"
+    )
+
+    # Show how many fixed_length training blocks were created 
+    print(f"Created {len(lm_dataset):,} training examples (fixed-length blocks)")
+
+    # Return the prepared dataset and the original size (before any subsampling).
+    return lm_dataset, original_size
+
 
 
 
