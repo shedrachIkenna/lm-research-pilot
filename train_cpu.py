@@ -75,4 +75,13 @@ def save_training_metadata(output_dir: str, config: GPT2Config, args: TrainingAr
             "block_size": config.n_positions,
         }
     }
+
+    metadata_path = Path(output_dir) / "training_metadata.json" # Create file path to create training_metadata.json file 
+
+    # Write the training metadata to the training_metadata.json file
+    with open(metadata_path, "w") as f: 
+        json.dump(metadata, f, indent=2)
+
+    print(f" Saved training metadata to {metadata_path}")
+    
     
