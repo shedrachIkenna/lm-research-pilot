@@ -129,6 +129,8 @@ def load_and_prepare_dataset(dataset_name: str, dataset_config: str, num_samples
     # Get the original dataset size 
     original_size = len(ds)
 
+
+    # Subsampling 
     # If requested number of samples (num_samples) < dataset_size, select only the num_samples examples 
     if num_samples < len(ds):
         ds = ds.select(range(num_samples))
@@ -137,5 +139,50 @@ def load_and_prepare_dataset(dataset_name: str, dataset_config: str, num_samples
     else:
         print(f"  Using all {original_size:,} examples")
     
+    # Funtion that Tokenizes text: Converts text into token IDs 
+    def tokenize_function(examples):
+        return tokenizer(
+            examples["text"],
+            return_attention_mask=False,
+            add_special_tokens=False
+        )
     
+    # Apply the tokenize_function to the entire dataset 
+    print("Tokenizing dataset...")
+    tokenized = ds.map(
+        tokenize_function,
+        batched=True, # processes multiple examples at once for efficiency 
+        batch_size=2000, # processes 2000 examples per batch 
+        remove_columns=ds.column_names, 
+        desc="Tokenizing"
+    )
+
+    # Group into fixed blocks: concatenate and chunk tokenized texts into fixed-size blocks
+    def group_texts(examples):
+        concatenated = sum(examples["input_ids"], []) # Concatenate all token ID lists in the batch into one long list
+        total_length = len(concatenated) # Gets the total number of tokens after concatenation.
+        if total_length >= block_size:
+            # If there are enough tokens, truncates to a multiple of block_size
+            total_length = (total_length // block_size) * block_size # For example, if total_length=1050 and block_size=512, this becomes 1024 (2 complete blocks, dropping the last 26 tokens).
+        
+        # Split the concatenated tokens into chunks of exactly block_size tokens. This creates a list of fixed-length sequences.
+        result = {
+            "input_ids": [
+                concatenated[i:i + block_size] 
+                for i in range(0, total_length, block_size)
+            ]
+        }
+
+        # labels = input_ids (the model predicts the next token, so each token serves as both input and label with appropriate shifting during training).
+        result["labels"] = result["input_ids"].copy()
+
+        return result # Returns the dictionary containing chunked input_ids and labels
+
+
+
+
+
+    
+
+
     
