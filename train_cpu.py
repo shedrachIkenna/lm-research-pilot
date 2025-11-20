@@ -117,4 +117,25 @@ def verify_tokenizer_compactibility(tokenizer_name: str = "gpt2"):
         print("Tokenizer verified: matches POS map")
     
     return tokenizer
+
+def load_and_prepare_dataset(dataset_name: str, dataset_config: str, num_samples: int, tokenizer, block_size: int):
+    """
+    Load and prepare dataset for language modeling 
+    """
+    # Load dataset from Hugging Face (datasets library) and get the training split 
+    print(f"Loading dataset: '{dataset_name}' ({dataset_config})...")
+    ds = load_dataset(dataset_name, dataset_config, split="train")
+
+    # Get the original dataset size 
+    original_size = len(ds)
+
+    # If requested number of samples (num_samples) < dataset_size, select only the num_samples examples 
+    if num_samples < len(ds):
+        ds = ds.select(range(num_samples))
+        print(f"  Subsampled {num_samples:,} / {original_size:,} examples")
+    # Otherwise, select the entire dataset 
+    else:
+        print(f"  Using all {original_size:,} examples")
+    
+    
     
