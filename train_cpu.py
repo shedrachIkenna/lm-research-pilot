@@ -195,6 +195,31 @@ def load_and_prepare_dataset(dataset_name: str, dataset_config: str, num_samples
     return lm_dataset, original_size
 
 
+def create_model(tokenizer, n_positions: int = 32, n_embd: int = 64, n_layer: int = 1, n_head: int = 2):
+    """
+    Create a small GPT-2 model configured for CPU training 
+    """
+    # Model configuration 
+    config = GPT2Config(
+        vocab_size=tokenizer.vocab_size,
+        n_positions=n_positions,
+        n_ctx=n_positions,
+        n_embd=n_embd,
+        n_layer=n_layer,
+        n_head=n_head,
+    )
+
+    # initialize model 
+    model = GPT2LMHeadModel(config)
+
+    # Count parameters
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+    print(f" Created model with {total_params:,} parameters ({trainable_params:,} trainable)")
+    print(f" Layers: {n_layer}, Embedding dim: {n_embd}, Heads: {n_head}")
+    
+    return model, config
 
 
 
