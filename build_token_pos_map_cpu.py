@@ -17,12 +17,12 @@ import argparse
 # CPU/pilot-friendly settings 
 NUM_WORDS_TO_PROCESS = 50_000 
 OUTPATH = "token_pos_map.json" # output file 
-MIN_OCCURENCES = 3 # if a token occurs fewer than 3 times in the entire dataset, POS tag won't be assigned 
+MIN_OCCURRENCES = 3 # if a token occurs fewer than 3 times in the entire dataset, POS tag won't be assigned 
 
 def build_token_pos_mapping(
         num_words: int = NUM_WORDS_TO_PROCESS, 
         output_path: str = OUTPATH,
-        min_occurences: int = MIN_OCCURENCES, 
+        min_occurrences: int = MIN_OCCURRENCES, 
         dataset_name: str = "wikitext",
         dataset_config: str = "wikitext-2-raw-v1",
         tokenizer_name: str = "gpt2",
@@ -35,7 +35,7 @@ def build_token_pos_mapping(
     Args: 
         num_words: Number of words to process (defined default as 50k)
         output_path: file path to save the mapping JSON file 
-        min_occurences: Minimum occurences required to assign a POS 
+        min_occurrences: Minimum occurences required to assign a POS 
         dataset_name: HuggingFace dataset name 
         dataset_config: Dataset configuration 
         tokenizer_name: HuggingFace tokenizer name 
@@ -142,7 +142,7 @@ def build_token_pos_mapping(
         total_count = sum(counter.values()) # Iterates through each token ID and calculates how many times it was seen 
 
         # if the token appears enough times, find its most common POS tag 
-        if total_count >= min_occurences:
+        if total_count >= min_occurrences:
             most_common_pos, count = counter.most_common(1)[0]
 
             # Calculates confidence: calculates the percentage of times this token had its most common POS 
@@ -223,8 +223,8 @@ def main():
     parser.add_argument(
         "--min-occurrences",
         type=int, 
-        default=MIN_OCCURENCES,
-        help=f"Minimum occurences to assign POS (default: {MIN_OCCURENCES})"
+        default=MIN_OCCURRENCES,
+        help=f"Minimum occurences to assign POS (default: {MIN_OCCURRENCES})"
     )
 
     # Adds --dataset flag to let user choose a different dataset 
