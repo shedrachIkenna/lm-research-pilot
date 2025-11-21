@@ -247,8 +247,8 @@ def main():
         dataset_config=args.dataset_config,
     )
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
 
 
     
