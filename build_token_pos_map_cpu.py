@@ -80,7 +80,7 @@ def build_token_pos_mapping(
     
     # iterate through each text item in ds (the dataset)
     for ex in tqdm(ds, desc="Processing dataset"): # tqdm shows a progress bar with the description "Processing dataset"
-        text = ex[text].strip() # removes white space from current text item 
+        text = ex["text"].strip() # removes white space from current text item 
         if not text: 
             skipped_empty += 1 
             continue
