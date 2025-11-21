@@ -222,8 +222,152 @@ def create_model(tokenizer, n_positions: int = 32, n_embd: int = 64, n_layer: in
     return model, config
 
 
+def main():
+    parser = argparse.ArgumentParser(
+        description="Train tiny GPT-2 model for linguistic emergence analysis"
+    )
 
+    # Model Architecture Arguments
+    parser.add_argument("--n-layer", type=int, default=1, help="Number of transformer layers")
+    parser.add_argument("--n-embd", type=int, default=64, help="Embedding dimension")
+    parser.add_argument("--n-head", type=int, default=2, help="Number of attention heads")
+    parser.add_argument("--block-size", type=int, default=32, help="Context length")
+
+    # Training Arguments
+    parser.add_argument("--max-steps", type=int, default=500, help="Maximum training steps")
+    parser.add_argument("--batch-size", type=int, default=4, help="Per-device batch size")
+    parser.add_argument("--grad-accum", type=int, default=4, help="Gradient accumulation steps")
+    parser.add_argument("--lr", type=float, default=5e-4, help="Learning rate")
+    parser.add_argument("--weight-decay", type=float, default=0.01, help="Weight decay")
+    parser.add_argument("--num-epochs", type=int, default=1, help="Number of epochs")
+
+    # Dataset Arguments
+    parser.add_argument("--num-samples", type=int, default=2000, help="Number of dataset samples to use")
+    parser.add_argument("--dataset", type=str, default=DATASET_NAME, help="HuggingFace dataset name")
+    parser.add_argument("--dataset-config", type=str, default=DATASET_CONFIG, help="Dataset configuration")
+
+    # Checkpointing Arguments
+    parser.add_argument("--save-steps", type=int, default=100, help="Save checkpoint every N steps")
+    parser.add_argument("--save-total-limit", type=int, default=None, help="Maximum number of checkpoints to keep (None = keep all)")
+    parser.add_argument("--output-dir", type=str, default=OUTPUT_DIR, help="Output directory for checkpoints")
     
+    # Other Arguments
+    parser.add_argument("--num-threads", type=int, default=2, help="Number of CPU threads to use") #  CPU threading control
+    parser.add_argument("--seed", type=int, default=SEED, help="Random seed") # random seed for reproducibility
 
+    # Parse all command-line arguments into an args object.
+    args = parser.parse_args()
+
+    # Initialization 
+    set_seed(args.seed)
+    torch.set_num_threads(args.num_threads)
+    print(f"Set seed to {args.seed}, using {args.num_threads} CPU threads")
+
+    # Load and verify tokenizer (checks it matches the expected GPT-2 tokenizer)
+    tokenizer = verify_tokenizer_compactibility()
+
+    # GPT-2's tokenizer doesn't have a padding token by default. This adds one, which is needed for batching sequences of different lengths.
+    if tokenizer.pad_token is None:
+        tokenizer.add_special_tokens({"pad_token": "<|pad|>"})
+        print("✓ Added padding token to tokenizer")
+    
+    # Create model 
+    model, config = create_model(
+        tokenizer, 
+        n_positions=args.block_size,
+        n_embd=args.n_embd,
+        n_layer=args.n_layer,
+        n_head=args.n_head
+    )
+
+    # Load and prepare dataset 
+    lm_dataset, original_dataset_size = load_and_prepare_dataset(
+        args.dataset,
+        args.dataset_config,
+        args.num_samples,
+        tokenizer,
+        args.block_size
+    )
+
+    # Prepare batches of examples (training data)
+    data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+
+    # Training arguments
+    training_args = TrainingArguments(
+        output_dir=args.output_dir,
+        overwrite_output_dir=True,
+        per_device_train_batch_size=args.batch_size,
+        gradient_accumulation_steps=args.grad_accum,
+        num_train_epochs=args.num_epochs,
+        max_steps=args.max_steps,
+        learning_rate=args.lr,
+        weight_decay=args.weight_decay,
+        logging_steps=20,
+        save_steps=args.save_steps,
+        save_total_limit=args.save_total_limit,
+        fp16=False,
+        dataloader_num_workers=0,
+        remove_unused_columns=True,
+        report_to=[],
+        seed=args.seed,
+    )
+
+    # Save training metadata
+    os.makedirs(args.output_dir, exist_ok=True)
+    save_training_metadata(
+        args.output_dir, 
+        config, 
+        training_args,
+        original_dataset_size,
+        len(lm_dataset)
+    )
+
+    # Create trainer
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=lm_dataset,
+        data_collator=data_collator,
+    )
+
+
+    # Print training summary
+    effective_batch_size = args.batch_size * args.grad_accum
+    print(f"\n{'='*60}")
+    print("Training Configuration:")
+    print(f"  Effective batch size: {effective_batch_size}")
+    print(f"  Max steps: {args.max_steps}")
+    print(f"  Learning rate: {args.lr}")
+    print(f"  Checkpoints every {args.save_steps} steps")
+    print(f"  Output directory: {args.output_dir}")
+    print(f"{'='*60}\n")
+
+    # Train
+    print("Starting training...")
+    trainer.train()
+
+     # Save final model
+    final_path = os.path.join(args.output_dir, "final")
+    trainer.save_model(final_path)
+    print(f"\n Training complete! Final model saved to: {final_path}")
+    print(f" Checkpoints saved in: {args.output_dir}")
+
+    # List all checkpoints
+    checkpoint_dirs = sorted([
+        d for d in Path(args.output_dir).iterdir() 
+        if d.is_dir() and d.name.startswith("checkpoint-")
+    ])
+
+    if checkpoint_dirs:
+        print(f"\nAvailable checkpoints for analysis:")
+        for ckpt in checkpoint_dirs:
+            print(f"  - {ckpt.name}")
+    
+    print(f"\nNext step:")
+    print(f" Run embedding analysis on checkpoints in '{args.output_dir}'")
+
+if __name__ == "__main__":
+    main()
+    
 
     
