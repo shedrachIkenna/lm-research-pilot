@@ -1,0 +1,26 @@
+{
+  "\n        Extract and store key model architecture details from the GPT2Config object: \n            vocabulary size, maximum sequence length (n_positions), embedding dimension, \n            number of transformer layers, and number of attention heads.\n        model_config": {
+    "vocab_size": 50257,
+    "n_positions": 32,
+    "n_embd": 64,
+    "n_layer": 1,
+    "n_head": 2
+  },
+  "\n        Extract and store training hyperparameters from the TrainingArguments object: \n        learning rate, batch size per device, gradient accumulation steps, \n        calculate the effective batch size (physical batch size \u00d7 accumulation steps), \n        maximum training steps, number of epochs, weight decay regularization parameter\n        random seed for reproducibility.\n        training_config": {
+    "learning_rate": 0.0005,
+    "per_device_batch_size": 4,
+    "gradient_accumulation_steps": 4,
+    "effective_batch_size": 16,
+    "max_steps": 500,
+    "num_train_epochs": 1,
+    "weight_decay": 0.01,
+    "seed": 42
+  },
+  "\n        Record dataset details: \n            the dataset name (DATASET_NAME), \n            configuration (DATASET_CONFIG), \n            original dataset size, number of processed training examples, and the block size used for chunking sequences.\n        dataset_info": {
+    "name": "wikitext",
+    "config": "wikitext-2-raw-v1",
+    "raw_dataset_size": 36718,
+    "num_training_examples": 4230,
+    "block_size": 32
+  }
+}
