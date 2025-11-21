@@ -213,6 +213,14 @@ def main():
 
     # Adds --output flag to specify where to save the JSON file 
     parser.add_argument(
+        "--output",
+        type=str,
+        default=OUTPATH,
+        help=f"Output JSON path (default: {OUTPATH})"
+    )
+
+    # Add --min-occurences flag the specify the minimum occurence of a token before it can be assigned a POS tag 
+    parser.add_argument(
         "--min-occurrences",
         type=int, 
         default=MIN_OCCURENCES,
