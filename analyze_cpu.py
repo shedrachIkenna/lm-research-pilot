@@ -64,5 +64,14 @@ def load_token_pos_map(path):
     return mapping 
 
 
+def load_training_metadata(checkpoint_dir):
+    """Load training metadata from checkpoint directory if available"""
+    
+    metadata_path = Path(checkpoint_dir) / "training_metadata.json" # the metadata_path becomes checkpoint_dir/training_metadata.json. 
 
+    if metadata_path.exists(): #  Checks if the metadata file exists 
+        with open(metadata_path, 'r') as f: # if it does, open it in read mode
+            return json.load(f) # parse and return the JSON content 
+    
+    return None # if file doesn't exist, return None instead of raising a error 
     
