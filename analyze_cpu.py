@@ -29,4 +29,18 @@ warnings.filterwarnings('ignore', category=UserWarning) # Suppress user warning 
 warnings.filterwarnings('ignore', category=FutureWarning) # Suppress Future warnings about a library from cluttering the output in the console 
 torch.set_num_threads(2) # Limit pytorch to using only 2 CPU threads for parallel operations (like matrix multiplication)
 
+# Default paths 
+CHECKPOINT_DIR = "pilot_gpt2_cpu"
+TOKEN_POS_MAP = "token_pos_map.json"
+OUTDIR = "analysis_results"
+
+# Exemplar tokens to track (common English words)
+DEFAULT_EXEMPLAR_WORDS = ["the", "dog", "run", "was", "city", "new", "music", "time"]
+TOP_K_NEIGHBORS = 10
+
+# Dimensionality reduction settings
+PCA_DIM = 50
+UMAP_N_NEIGHBORS = 15
+UMAP_MIN_DIST = 0.1
+
 
