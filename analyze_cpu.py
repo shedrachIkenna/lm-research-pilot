@@ -74,4 +74,48 @@ def load_training_metadata(checkpoint_dir):
             return json.load(f) # parse and return the JSON content 
     
     return None # if file doesn't exist, return None instead of raising a error 
+
+def get_checkpoints(base_dir):
+    """Get sorted list of checkpoint directories"""
+
+    if not os.path.isdir(base_dir):
+        raise FileNotFoundError(f"Checkpoint directory not found: {base_dir}\nRun train_cpu.py first")
+    
+    checkpoints = [] # list to save checkpoints directories paths 
+    
+    for item in Path(base_dir).iterdir(): # iterates through all the items in the base directory 
+        if item.is_dir() and item.name.startswith("checkpoint-"): # finds directories whose name starts with "checkpoint-"
+            checkpoints.append(str(item)) # Adds the path of those directories as a string to the checkpoints list 
+
+    # Add final checkpoint to the list 
+    final_path = Path(base_dir) / "final" # construct the path to the final directory
+    if final_path.is_dir(): # check if it exists and is a directory 
+        checkpoints.append(str(final_path)) # add it to the checkpoints list 
+
+    # Sorting function 
+    def checkpoint_key(path):
+        name = os.path.basename(path) # Extracts the directory name from the full path (e.g., "outputs/checkpoint-100" → "checkpoint-100").
+        if name == 'final': # if the directory name is == final 
+            return (float('inf'), name) # return infinity as its sort key so it always comes last 
+        
+        if name.startswith("checkpoint-"): # for directories that starts with "checkpoint-"
+            try:
+                num = int(name.split("-")[1]) # split on "-" and convert index[1] (which is the number part to type int)
+                return (num, name) # return a tuple (num, name) eg. (100, "checkpoint")
+            except (IndexError, ValueError):
+                pass
+        
+        return (0, name) # fallback for any unexpected directory names - sorts them to the beginning 
+    
+    # Apply sorting using the checkpoint_key function as the key 
+    checkpoints = sorted(checkpoints, key=checkpoint_key)
+
+    # 
+    if not checkpoints:
+        raise ValueError(f"No checkpoints found in {base_dir}") # Raise an error if no checkpoints were found.
+    
+    print(f" Found {len(checkpoints)} checkpoints")
+    return checkpoints
+        
+
     
