@@ -10,3 +10,16 @@ produces:
     - token trajectory plots (PCA 2D) showing movements across checkpoints 
     - saves json results and plots to analysis_results/ folder 
 """
+
+import os 
+import sys
+import json
+import argparse
+from pathlib import Path
+from collections import defaultdict, Counter
+import numpy as np 
+import matplotlib as plt 
+import torch 
+import umap 
+import warnings 
+from transformers import GPT2TokenizerFast, GPT2LMHeadModel
