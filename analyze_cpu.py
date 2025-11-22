@@ -44,3 +44,25 @@ UMAP_N_NEIGHBORS = 15
 UMAP_MIN_DIST = 0.1
 
 
+def load_token_pos_map(path):
+    """Load token ID -> POS mapping from JSON file"""
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Token POS map not found: {path} \nRun build_token_pos_map_cpu.py first")
+    
+    with open(path, 'r', encoding='utf-8') as f: # Open the json file in read mode with UTF-8 encoding 
+        mapping = json.load(f) # parse the json content into a python dictionary 
+
+    # Convert all dictionary keys (they were saved as strings in the json file) to integers. 
+    mapping = {int(k): v for k, v in mapping.items()} #  For example, {"1234": "NOUN"} becomes {1234: "NOUN"}
+
+    print(f" Loaded POS mapping for {len(mapping):,} tokens")
+
+    # POS distribution count 
+    pos_counts = Counter(mapping.values()) # Count how many tokens belong to each POS category.
+    print(f" Top 5 POS categories: {dict(pos_counts.most_common(5))}") # Print the 5 most common POS categories and their counts.
+
+    return mapping 
+
+
+
+    
