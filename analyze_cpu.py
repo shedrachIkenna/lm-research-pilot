@@ -233,3 +233,37 @@ def compute_probes_with_split(X, y_labels, text_size=0.2, random_state=42):
         'lr_test': lr_test_acc,
         'split_used': True
     }
+
+def compute_silhouette_per_pos(X, y_encoded, label_names):
+    """Compute Overall and per-class silhouette scores"""
+
+    results = {}
+    # Compute overall silhouette scores 
+    try:
+        if len(np.unique(y_encoded)) > 1: # Checks if there are at least 2 different label categories. (silhouette needs at least 2 clusters)
+            overall = silhouette_score(X, y_encoded) # computes the silhouette scores across all samples 
+            results['overall_silhouette'] = float(overall) # store overall results as float 
+        else:
+            results['overall_silhouette'] = float('nan') # if only one category exists meaning that we can't compute the score. store as nan
+    except Exception as e: # If computation fails for any reason (insufficient samples, numerical issues), stores NaN.
+        results['overall_silhouette'] = float('nan')
+
+    # Compute per-class silhouette scores 
+    try: 
+        # Computes silhouette score for each individual sample
+        sample_sil = silhouette_samples(X, y_encoded) # Returns an array where sample_sil[i] is the silhouette score for sample i
+
+        for idx, label in enumerate(label_names):
+            # Create a boolean mask selecting all samples belonging to that category.
+            mask = (y_encoded == idx) # For example, if idx=1 corresponds to "NOUN", mask is True for all NOUN tokens.
+            if mask.sum() >= 2: # If the category has at least 2 samples (needed for meaningful silhouette)
+                results[label] = float(sample_sil[mask].mean()) # compute the mean 
+            else:
+                results[label] = float("nan") # store as NAN 
+    
+    except Exception as e:
+        # If computation fails, sets all per-class scores to NaN.
+        for label in label_names:
+            results[label] = float('nan')   
+    
+    return results # Returns dictionary with overall and per-class silhouette scores.
