@@ -24,6 +24,9 @@ import umap
 import warnings 
 from transformers import GPT2TokenizerFast, GPT2LMHeadModel
 from sklearn.preprocessing import LabelEncoder
+from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
+from sklearn.metrics import accuracy_score, silhouette_score, silhouette_samples
+from sklearn.linear_model import LogisticRegression
 
 
 warnings.filterwarnings('ignore', category=UserWarning) # Suppress user warning from appearing in the console 
@@ -169,4 +172,25 @@ def compute_probes_with_split(X, y_labels, text_size=0.2, random_state=42):
 
     Probes are simple classifiers that tests how well the embeddings encode linguistic information 
     """
-    
+    # Data validation 
+    class_counts = Counter(y_labels) # counts how many samples exists for each POS category 
+    min_class_size = min(class_counts.values()) # get the smallest POS sample category 
+
+    """
+    Use train/test split if 
+        - We have at least 20 samples (otherwise test set would be too small). why? we don't want a test set that is too small
+        - At least 2 samples per class (needed for stratified splitting). why? If we tried stratified split on a set 
+            with a sample class = 1, it will fail because you cannot split a class with only one example. 
+    """
+    use_split = len(X) >= 20 and min_class_size >= 2
+
+    if not use_split: # if train/test isn't used because the dataset is small, train on everything without splitting 
+        # k-NN intuition: Predicts a token's POS by looking at its k nearest neighbors in embedding space. If most neighbors are NOUNs, predict NOUN.
+        knn = KNeighborsClassifier(n_neighbors=min(5, len(X) - 1)) 
+        knn.fit(X, y_labels)
+        knn_train_acc = accuracy_score(y_labels, knn.predict(X))
+
+        # Logistic Regression intuition: Learns linear decision boundary between POS categories in the embedding space 
+        lr = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=random_state)
+        lr.fit(X, y_labels)
+        lr_train_acc = accuracy_score(y_labels, lr.predict(X))
