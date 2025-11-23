@@ -23,6 +23,7 @@ import torch
 import umap 
 import warnings 
 from transformers import GPT2TokenizerFast, GPT2LMHeadModel
+from sklearn.preprocessing import LabelEncoder
 
 
 warnings.filterwarnings('ignore', category=UserWarning) # Suppress user warning from appearing in the console 
@@ -138,5 +139,26 @@ def extract_embeddings_from_checkpoint(checkpoint_path):
     except Exception as e: 
         raise RuntimeError(f"Failed to load model from {checkpoint_path}: {e}")
         
+def build_label_arrays(token_pos_map, vocab_size):
+    """Build arrays for labeled tokens"""
+    # create a sorted list of token IDS that have POS mappings and only key those within the model's vocabulary 
+    token_ids = sorted([tid for tid in token_pos_map.keys() if tid < vocab_size]) # This is a safety-check. If the POS map was built with a different tokenizer or vocab size, then some token IDs might be out of range 
+
+    # Create a NumPy array of POS tags corresponding to each token ID. 
+    y_labels = np.array([token_pos_map[tid] for tid in token_ids]) # For example, if token_ids = [52, 318, 423], this might produce ['NOUN', 'VERB', 'ADJ']
+
+    # Encode labels numerically.
+    le = LabelEncoder() # initialize label encoder 
+    y_encoded = le.fit_transform(y_labels) # convert string labels to intergers. For example, So ['NOUN', 'VERB', 'ADJ'] becomes [1, 2, 0]
+
+    """
+    Return values 
+        - token IDS -> List of token IDs that have POS labels 
+        - y_labels -> string POS tags (e.g., ['NOUN', 'VERB', ...])
+        - y_encoded -> Integer encoded POS tags (e.g., [1, 2, ...])
+        - le -> the LabelEncoder object that will be used for decoding interger back to string later on 
+    """
+
+    return token_ids, y_labels, y_encoded, le 
 
     
