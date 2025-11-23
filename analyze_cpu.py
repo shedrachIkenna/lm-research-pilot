@@ -116,6 +116,27 @@ def get_checkpoints(base_dir):
     
     print(f" Found {len(checkpoints)} checkpoints")
     return checkpoints
+
+
+def extract_embeddings_from_checkpoint(checkpoint_path):
+    """Load model and return embedding matrix (vocab_size, emb_dim) at that checkpoint"""
+    try:
+        # load the full GPT2 model from the saved checkpoint
+        model = GPT2LMHeadModel.from_pretrained(checkpoint_path)  # from_pretrained reconstructs the model architecture and loads the saved weights 
+        """
+        Extract model embedding at that checkpoint.To do that we have to do the following: 
+            - access the core transformer module using model.transformer 
+            - access the Word Token Embedding layer (the look up table that converts token IDs to vectors) using .wte 
+            - get the actual weight matrix (a pytorch tensor of shape [vocab_size, embedding_dim]) using .weight
+            - remove the tensor from the computational graph (no gradient needed) using .detach() function 
+            - move the tensor to CPU memory (if it was on GPU) using .cpu() function 
+            - convert the pytorch tensor to a NumPy array using .numpy() function 
+        """
+        emb = model.transformer.wte.weight.detach().cpu().numpy() # does every step in the block comment above 
+
+        return emb 
+    except Exception as e: 
+        raise RuntimeError(f"Failed to load model from {checkpoint_path}: {e}")
         
 
     
