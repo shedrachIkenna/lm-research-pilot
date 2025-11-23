@@ -168,7 +168,7 @@ def build_token_pos_mapping(
 
     # Summary of processed statistics 
     print(f"\n{'='*60}")
-    print(f"✓ Saved token->POS map to {output_path}")
+    print(f" Saved token->POS map to {output_path}")
     print(f"  Processed single-token words: {processed_words:,}")
     print(f"  Unique tokens with POS: {len(token_to_pos):,}")
     print(f"  Tokens below threshold or low confidence: {low_count_tokens}")

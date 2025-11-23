@@ -27,6 +27,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
 from sklearn.metrics import accuracy_score, silhouette_score, silhouette_samples
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 
 
 warnings.filterwarnings('ignore', category=UserWarning) # Suppress user warning from appearing in the console 
@@ -184,6 +185,7 @@ def compute_probes_with_split(X, y_labels, text_size=0.2, random_state=42):
     """
     use_split = len(X) >= 20 and min_class_size >= 2
 
+    # No splitting 
     if not use_split: # if train/test isn't used because the dataset is small, train on everything without splitting 
         # k-NN intuition: Predicts a token's POS by looking at its k nearest neighbors in embedding space. If most neighbors are NOUNs, predict NOUN.
         knn = KNeighborsClassifier(n_neighbors=min(5, len(X) - 1)) 
@@ -194,3 +196,40 @@ def compute_probes_with_split(X, y_labels, text_size=0.2, random_state=42):
         lr = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=random_state)
         lr.fit(X, y_labels)
         lr_train_acc = accuracy_score(y_labels, lr.predict(X))
+
+        return {
+            'knn_train': knn_train_acc,
+            'knn_test': None, # Returns None since no test set was used 
+            'lr_train': lr_train_acc,
+            'lr_test': None, # Returns None since no test set was used 
+            'split_used': False
+        }
+    
+    # Using train-test split using stratified split
+    # Stratified splits tries to maintain class proportions in both sets (train and test splits)
+    try:
+        X_train, X_test, y_train, y_test = train_test_split(X, y_labels, text_size=text_size, random_state=random_state, stratify=y_labels)
+    except ValueError: # if stratified test fails, fallback to random splitting without stratification 
+        X_train, X_test, y_train, y_test = train_test_split(X, y_labels, text_size=text_size, random_state=random_state)
+
+    # k_NN probe 
+    knn = KNeighborsClassifier(n_neighbors=min(5, len(X_train) - 1))
+    # Train k-NN on training set, evaluates on both training and test sets
+    knn.fit(X_train, y_train) # train k-NN on training set
+    knn_train_acc = accuracy_score(y_train, knn.predict(X_train)) # Evaluate on training set
+    knn_test_acc = accuracy_score(y_test, knn.predict(X_test)) # Evaluate on test set 
+
+    # Logistic Regression Probe 
+    lr = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=random_state)
+    # Train Logistic regression on training set, evaluate on both training and test sets 
+    lr.fit(X_train, y_train) # train logistic regression on training set
+    lr_train_acc = accuracy_score(y_train, lr.predict(X_train)) # Evaluate on training set 
+    lr_test_acc = accuracy_score(y_test, lr.predict(X_test)) # Evaluate on test set 
+
+    return {
+        'knn_train': knn_train_acc,
+        'knn_test': knn_test_acc,
+        'lr_train': lr_train_acc,
+        'lr_test': lr_test_acc,
+        'split_used': True
+    }
