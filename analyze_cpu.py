@@ -161,4 +161,12 @@ def build_label_arrays(token_pos_map, vocab_size):
 
     return token_ids, y_labels, y_encoded, le 
 
+
+def compute_probes_with_split(X, y_labels, text_size=0.2, random_state=42):
+    """
+    Compute k-NN and logistic reqression probes with train/text splits 
+    Handles cases of insufficient data or rare classes 
+
+    Probes are simple classifiers that tests how well the embeddings encode linguistic information 
+    """
     
