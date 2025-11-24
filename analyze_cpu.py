@@ -28,6 +28,7 @@ from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
 from sklearn.metrics import accuracy_score, silhouette_score, silhouette_samples
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 warnings.filterwarnings('ignore', category=UserWarning) # Suppress user warning from appearing in the console 
@@ -267,3 +268,68 @@ def compute_silhouette_per_pos(X, y_encoded, label_names):
             results[label] = float('nan')   
     
     return results # Returns dictionary with overall and per-class silhouette scores.
+
+def compute_intra_inter_cosine(X_full, token_ids, y_labels):
+    """
+    Compute mean intra-class and inter-class cosine similarity per POS 
+    X_full: full embedding matrix (vocab_size, emb_dim)
+    token_ids: list of labeled token indices 
+    y_labels: POS labels for those tokens 
+    """
+
+    # Build POS to index mapping 
+    """
+    Creates a dictionary mapping each POS category to a list of indices (positions in token_ids). For example: 
+        {
+            "NOUN": [0, 3, 7, 12, ...],    # indices where NOUNs appear
+            "VERB": [1, 5, 9, 15, ...],    # indices where VERBs appear
+            "ADJ": [2, 4, 8, 11, ...]      # indices where ADJs appear
+        }
+    """
+    pos2indices = defaultdict(list)
+    for i, tid in enumerate(token_ids):
+        pos2indices[y_labels[i]].append(i) # pos2indices is a dictionary mapping each POS category to a list of indices
+    
+    # Extracts embeddings for only the labeled tokens
+    X_labeled = X_full[token_ids] #  If token_ids = [52, 318, 423], this gets rows 52, 318, and 423 from the full embedding matrix.
+    
+    # Compute pairwise cosine similarity between all labeled tokens 
+    """
+    Returns a matrix where cos_matrix[i, j] is the cosine similarity between token i and token j. Shape: (num_labeled_tokens, num_labeled_tokens).
+    Cosine similarity ranges from -1 to +1:
+        +1: Vectors point in exactly the same direction (very similar)
+        0: Vectors are orthogonal (unrelated)
+        -1: Vectors point in opposite directions (very dissimilar)
+    """
+    cos_matrix = cosine_similarity(X_labeled) # Returns the cosine similarity matrix between all labeled tokens as explained above
+
+    results = {}
+    for pos, idxs in pos2indices.items():
+        if len(idxs) < 2:
+            results[pos] = {"intra_mean": float("nan"), "inter_mean": float("nan")} # If a POS category has fewer than 2 tokens, can't compute meaningful similarities, so stores NaN.
+            continue
+
+        # Intra class similarity - Compute all pairwise similarities within each POS category 
+        intra_vals = []
+        for i in idxs:
+            for j in idxs:
+                if i != j: # Exclude self-similarity since every token has similarity 1.0 with itself
+                    intra_vals.append(cos_matrix[i, j]) # For example, if this category has tokens at indices [0, 3, 7], collects similarities: (0,3), (0,7), (3,0), (3,7), (7,0), (7,3)
+        
+        intra_mean = float(np.mean(intra_vals)) if intra_vals else float('nan')
+
+        # Inter class similarity - Compute all pairwise POS similarities across  cross-categories 
+        other_idxs = [i for i in range(len(token_ids)) if i not in idxs] # Get indices of other POS categories 
+
+        if other_idxs:
+            inter_vals = cos_matrix[np.ix_(idxs, other_idxs)].ravel()
+            inter_mean = float(np.mean(inter_vals))
+        else:
+            inter_mean = float('nan')
+
+        results[pos] = {"intra_mean": intra_mean, "inter_mean": inter_mean}
+    
+    return results
+
+
+        
