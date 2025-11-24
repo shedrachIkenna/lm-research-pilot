@@ -331,5 +331,60 @@ def compute_intra_inter_cosine(X_full, token_ids, y_labels):
     
     return results
 
+def get_nearest_neighbors(emb_matrix, tokenizer, exemplar_words, top_k=10):
+    """
+    Find nearest neighbors of exemplar words in embedding space 
+    Returns: 
+        dict: word -> {token_id, neighbors: [...]}
+    """
+    # Normalize Embeddings 
+    norms = np.linalg.norm(emb_matrix, axis=1, keepdims=True)
+    normed = emb_matrix / (norms + 1e-12)
+
+    # Nearest Neighbors Search 
+    # Use a k-NN model that finds the nearest neighbors using cosine distance 
+    nbrs = NearestNeighbors(n_neighbors=top_k+5, algorithm='auto', metric='cosine')
+    nbrs.fit(normed)
+
+    results = {}
+    for word in exemplar_words:
+        # Tokenize word 
+        toks = tokenizer(" " + word, add_special_tokens=False)["input_ids"] # Tokenizes the word with a space prefix (critical for GPT-2 tokenizer to match vocabulary correctly). Returns list of token IDs.
+        if not toks or toks[0] >= emb_matrix.shape[0]:
+            results[word] = {"token_id": None, "neighbors": []}
+            continue
+
+        tid = toks[0] # Gets the token ID for this word (takes first token if word splits into multiple).
+        # Find The Nearest Neighbors 
+        distances, indices = nbrs.kneighbors(normed[tid].reshape(1, -1), return_distance=True)
+        distances = distances[0]
+        indices = indices[0]
+
+        # Get Neighbor List 
+        neighbors = []
+        for dist, idx in zip(distances, indices): # Iterates through neighbors. Skips the word itself (every token is its own nearest neighbor with distance 0).
+            if idx == tid: # Skip self
+                continue
+
+            cos_sim = 1.0 - float(dist) #Converts cosine distance back to cosine similarity: similarity = 1 - distance
+            token_str = tokenizer.decode([idx]).strip() # Decodes the neighbor's token ID back to readable text
+
+            # Add neighbor info to list and stop once we have top_k neighbors (excluding self).
+            neighbors.append({
+                "token_id": int(idx),
+                "token_str": token_str,
+                "cosine": cos_sim
+            })
+
+            if len(neighbors) >= top_k:
+                break
+            
+        results[word] = {
+            "token_id": int(tid),
+            "neighbors": neighbors
+        }
+
+    return results
+
 
         
