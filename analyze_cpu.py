@@ -454,6 +454,11 @@ def plot_umap_visualization(emb_pca, token_ids, y_labels, output_path, checkpoin
         return emb_2d # returns the 2D coordinates
 
     except Exception as e: 
-        print(f" UMAP Failed: {e}")
+        print(f" UMAP Failed: {e}") # If anything fails (insufficient data, UMAP errors, etc.), prints error message and returns None instead of crashing.
         return None
-        
+    
+def plot_trajectory(checkpoint_embeddings, exemplar_words, tokenizer, output_path):
+    """
+    Plot token trajectories across checkpoints using PCA 
+    checkpoint_embeddings: dict of checkpoint_name -> embedding_matrix 
+    """
