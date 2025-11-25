@@ -23,12 +23,13 @@ import torch
 import umap 
 import warnings 
 from transformers import GPT2TokenizerFast, GPT2LMHeadModel
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
 from sklearn.metrics import accuracy_score, silhouette_score, silhouette_samples
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.decomposition import PCA
 
 
 warnings.filterwarnings('ignore', category=UserWarning) # Suppress user warning from appearing in the console 
@@ -462,3 +463,103 @@ def plot_trajectory(checkpoint_embeddings, exemplar_words, tokenizer, output_pat
     Plot token trajectories across checkpoints using PCA 
     checkpoint_embeddings: dict of checkpoint_name -> embedding_matrix 
     """
+    try:
+        # Tokenize each of the exemplar words 
+        exemplar_token_ids = {}
+        for word in exemplar_words:
+            toks = tokenizer(" " + word, add_special_tokens=False)["input_ids"]
+            if toks:
+                exemplar_token_ids[word] = toks[0]
+        
+        if not exemplar_token_ids:
+            print(" No valid exemplar tokens found")
+            return 
+        
+        # Sorts checkpoint names by length first, then alphabetically.
+        checkpoint_names = sorted(checkpoint_embeddings.keys(), key=lambda x: (len(x), x))
+
+        # initialize a dictionary to store each word's trajectory (list of 2D coordinates across checkpoints)
+        trajectories = defaultdict(list)
+
+        # iterate through checkpoints and gets the embedding matrix for each checkpoint 
+        for ckpt_name in checkpoint_names:
+            emb = checkpoint_embeddings[ckpt_name]
+
+            # Standardize and scale embeddings to have a mean = 0 and standard deviation = 1 
+            scaler = StandardScaler()
+            emb_scaled = scaler.fit_transform(emb)
+
+            # Use PCA to reduce the high dimensions to 2D for visualization 
+            pca = PCA(n_components=2, random_state=42)
+            emb_2d = pca.fit_transform(emb_scaled)
+
+            for word, tid in exemplar_token_ids.items(): # iterates through exemplar_token_ids
+                if tid < emb_2d.shape[0]: # is token ID valid? 
+                    trajectories[word].append(emb_2d[tid]) # append coordinates
+                else: 
+                    trajectories[word].append([np.nan, np.nan]) # appends NaN (missing data)
+
+                """
+                tracjectories output example 
+                {
+                    "king": [[x0, y0], [x1, y1], [x2, y2], ...],  # coordinates at each checkpoint
+                    "run": [[x0, y0], [x1, y1], [x2, y2], ...],
+                    "happy": [[x0, y0], [x1, y1], [x2, y2], ...]
+                }
+             
+                """
+        # Create plot 
+        # Creates a figure and gets a colormap with 10 distinct colors (cycles if more than 10 words).
+        plt.figure(figsize=(10, 8))
+        colors = plt.cm.get_cmap('tab10')
+
+        # Iterates through each word and its trajectory coordinates, converting to NumPy array
+        for i, (word, coords) in enumerate(trajectories.items()):
+            coords = np.array(coords)
+            if len(coords) > 0:
+                # Plot trajectories as a line-connecting points 
+                plt.plot(
+                    coords[:, 0], # All x-coordinates (PC 1)
+                    coords[:, 1], # All y-coordinates (PC 2)
+                    'o-', # Line with circle markers at each point
+                    label=word, # label for each word 
+                    color=colors(i % 10), # # Each word gets a unique color from the colormap
+                    linewidth=2, # Line thickness 
+                    markersize=8 # Point size
+                )
+                # Add directional arrows 
+                # Iterates through consecutive checkpoint pairs, skipping if either coordinate is NaN.
+                for j in range(len(coords) - 1):
+                    if not (np.isnan(coords[j]).any() or np.isnan(coords[j+1]).any()):
+                        # Calculates the change in x and y between consecutive checkpoints (the arrow direction).
+                        dx = coords[j+1, 0] - coords[j, 0]
+                        dy = coords[j+1, 1] - coords[j, 1]
+
+                        # Draws an arrow from checkpoint j to j+1:
+                        plt.arrow(
+                            coords[j, 0], coords[j, 1], # Starts at (coords[j, 0], coords[j, 1])
+                            dx, dy, # Extends by (dx, dy)
+                            head_width=0.05, # Arrow head size 
+                            head_length=0.05, # Arrow head size 
+                            fc=colors(i % 10), # Fill color
+                            ec=colors(i % 10), # Edge color
+                            alpha=0.6 #  60% opacity (semi-transparent)
+                        )
+
+        # Adds legend, title, axis labels, and a semi-transparent grid.
+        plt.legend(loc='best', fontsize=10)
+        plt.title('Token Trajectories Across Training (PCA 2D)', fontsize=12)
+        plt.xlabel('PC 1')
+        plt.ylabel('PC 2')
+        plt.grid(True, alpha=0.3)
+
+        # Adjusts layout, saves the figure, closes it to free memory, and prints confirmation.
+        plt.tight_layout()
+        plt.savefig(output_path, dpi=150, bbox_inches='tight')
+        plt.close()
+        
+        print(f" Saved trajectory plot to {output_path}")
+    
+    except Exception as e: # Catches any errors and prints a message instead of crashing.
+        print(f" Trajectory plot failed: {e}")
+            
