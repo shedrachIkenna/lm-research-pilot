@@ -378,7 +378,7 @@ def get_nearest_neighbors(emb_matrix, tokenizer, exemplar_words, top_k=10):
 
             if len(neighbors) >= top_k:
                 break
-            
+
         results[word] = {
             "token_id": int(tid),
             "neighbors": neighbors
@@ -386,5 +386,70 @@ def get_nearest_neighbors(emb_matrix, tokenizer, exemplar_words, top_k=10):
 
     return results
 
+def plot_umap_visualization(emb_pca, token_ids, y_labels, output_path, checkpoint_name, metrics):
+    """
+    Create UMAP visualization colored by POS tags
+    What is UMAP? Uniform Manifold Approximation and Projection:
+         —Its a dimensionality reduction technique that preserves both local and global structure better than t-SNE or PCA.
+    """
+    X_labeled = emb_pca[token_ids] # Extract token embeddings that have POS labels 
+
+    # Configure and initilize UMAP 
+    reducer = umap.UMAP(
+        n_components = 2, # Reduce to 2D for visualization (x, y coordinate)
+        random_state = 42, # Ensures reproducibility (same input → same output)
+        n_neighbors = min(UMAP_N_NEIGHBORS, len(token_ids) - 1), # How many neighbors UMAP considers for local structure. Uses the configured value or fewer if there aren't enough tokens. Must be less than total points.
+        min_dis=UMAP_MIN_DIST # Minimum distance between points in 2D space (controls how tightly UMAP packs points)
+    )
+
+    emb_2d = reducer.fit_transform(X_labeled)
+
+    unique_labels = sorted(list(set(y_labels))) # Gets all unique POS tags and sorts them alphabetically
+    label2idx = {lab: i for i, lab in enumerate(unique_labels)} # Creates a mapping from POS tag → integer (e.g., {"ADJ": 0, "NOUN": 1, "VERB": 2})
+    colors = [label2idx[y_labels[i]] for i in range(len(y_labels))] # Converts each token's POS label to its corresponding integer for coloring. Example: If token 0 is a NOUN, colors[0] = 1
+
+    # Create figure
+    plt.figure(figsize=(10, 8)) #Create a figure with 10×8 inch dimensions.
+
+    # Create scatter plot 
+    scatter = plt.scatter(
+            emb_2d[:, 0], #  x-coordinates (UMAP dimension 1)
+            emb_2d[:, 1], #  y-coordinates (UMAP dimension 2)
+            c=colors, # Color by POS tag (integer values)
+            s=15, # Point size
+            alpha=0.6, # 60% opacity (helps see overlapping points)
+            cmap='tab20' if len(unique_labels) <= 20 else 'viridis' # Uses 'tab20' colormap if ≤20 POS categories (distinct colors), otherwise 'viridis' (continuous gradient)
+    )
+    # Add title with metrics 
+    title_lines = [f"UMAP - {checkpoint_name}"] # Add title stating the checkpoint name 
+    # Show probe accuracies 
+    if metrics['split_used']: # If train/test split was used, shows test accuracies
+        title_lines.append(
+            f"k-NN: test={metrics['knn_test']:.3f} | LR: test={metrics['lr_test']:.3f}"
+        )
+    else: # Otherwise, shows train accuracies
+        title_lines.append(
+            f"k-NN: {metrics['knn_train']:.3f} | LR: {metrics['lr_train']:.3f}"
+        )
+
+    plt.title('\n'.join(title_lines), fontsize=11) # Set the title by joining lines with newlines
+
+    # Color bar legend 
+    cbar = plt.colorbar(scatter, ticks=range(len(unique_labels)))
+    cbar.set_label('POS Tag', rotation=270, labelpad=15)
+    cbar.ax.set_yticklabels(unique_labels, fontsize=8)
+
+    # Adds axis labels
+    plt.xlabel('UMAP 1')
+    plt.ylabel('UMAP 2')
+    # Automatically adjusts spacing to prevent label overlap
+    plt.tight_layout()
+
+    # Save figure 
+    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    plt.close()
+
+    print(f" Saved UMAP to {output_path}")
+    return emb_2d # returns the 2D coordinates
 
         
