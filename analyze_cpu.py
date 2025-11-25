@@ -562,4 +562,55 @@ def plot_trajectory(checkpoint_embeddings, exemplar_words, tokenizer, output_pat
     
     except Exception as e: # Catches any errors and prints a message instead of crashing.
         print(f" Trajectory plot failed: {e}")
+
+def plot_temporal_metrics(metrics, output_path):
+    """
+    Plot probe accuracies over training
+    The visualization answers: How does linguistic structure emerge over time during training?
+    """
+    try: 
+        checkpoint_names = [m['checkpoint'] for m in metrics]
+        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+        ax1 = axes[0]
+        if metrics[0].get('split_used', False):
+            knn_test = [m['knn_test'] for m in metrics]
+            lr_test = [m['lr_test'] for m in metrics]
+
+            ax1.plot(checkpoint_names, knn_test, 'o-', label='k-NN (test)', linewidth=2)
+            ax1.plot(checkpoint_names, lr_test, 's-', label='Linear (test)', linewidth=2)
+
+            ax1.set_ylabel('Test Accuracy')
+            ax1.set_title('Probing Accuracy Over Training (Test Set)')
+        else:
+            knn_train = [m['knn_train'] for m in metrics]
+            lr_train = [m['lr_train'] for m in metrics]
+            ax1.plot(checkpoint_names, knn_train, 'o-', label='k-NN', linewidth=2)
+            ax1.plot(checkpoint_names, lr_train, 's-', label='Linear', linewidth=2)
+            ax1.set_ylabel('Accuracy')
+            ax1.set_title('Probing Accuracy Over Training')
+        
+        ax1.set_xlabel('Checkpoint')
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+        ax1.tick_params(axis='x', rotation=45)
+
+        ax2 = axes[1]
+
+        silhouette_scores = [m.get('silhouette_overall', np.nan) for m in metrics]
+    
+        ax2.plot(checkpoint_names, silhouette_scores, 'o-', color='green', linewidth=2)
+        ax2.set_xlabel('Checkpoint')
+        ax2.set_ylabel('Silhouette Score')
+        ax2.set_title('Cluster Quality Over Training')
+        ax2.grid(True, alpha=0.3)
+        ax2.tick_params(axis='x', rotation=45)
+
+        plt.tight_layout()
+        plt.savefig(output_path, dpi=150, bbox_inches='tight')
+        plt.close()
+        
+        print(f" Saved temporal plot to {output_path}")
+    
+    except Exception as e:
+        print(f" Temporal plot failed: {e}")
             
