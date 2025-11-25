@@ -613,4 +613,172 @@ def plot_temporal_metrics(metrics, output_path):
     
     except Exception as e:
         print(f" Temporal plot failed: {e}")
-            
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Analysis of token embeddings across training"
+    )
+    parser.add_argument("--checkpoint-dir", type=str, default=CHECKPOINT_DIR)
+    parser.add_argument("--token-pos-map", type=str, default=TOKEN_POS_MAP)
+    parser.add_argument("--output-dir", type=str, default=OUTDIR)
+    parser.add_argument("--exemplar-words", type=str, nargs='+', default=DEFAULT_EXEMPLAR_WORDS)
+    parser.add_argument("--top-k", type=int, default=TOP_K_NEIGHBORS)
+    parser.add_argument("--test-split", type=float, default=0.2)
+
+    args = parser.parse_args()
+    
+    os.makedirs(args.output_dir, exist_ok=True)
+    
+    print(f"\n{'='*60}")
+    print("Linguistic Structure Analysis")
+    print(f"{'='*60}\n")
+    
+    # Load tokenizer
+    print("Loading tokenizer...")
+    tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+    
+    # Load POS mapping
+    token_pos_map = load_token_pos_map(args.token_pos_map)
+
+    # Load training metadata
+    metadata = load_training_metadata(args.checkpoint_dir)
+    if metadata:
+        print(f"\n Training metadata:")
+        print(f"  Model: {metadata['model_config']['n_layer']} layers, "
+              f"{metadata['model_config']['n_embd']} dim")
+        print(f" Training: {metadata['training_config']['max_steps']} steps")
+    
+    # Get checkpoints
+    checkpoints = get_checkpoints(args.checkpoint_dir)
+
+    # Load all embeddings
+    print(f"\nLoading embeddings from checkpoints...")
+    checkpoint_embeddings = {}
+    for ckpt in checkpoints:
+        ckpt_name = os.path.basename(ckpt)
+        print(f"  Loading {ckpt_name}...")
+        emb = extract_embeddings_from_checkpoint(ckpt)
+        checkpoint_embeddings[ckpt_name] = emb
+    
+    vocab_size = checkpoint_embeddings[list(checkpoint_embeddings.keys())[0]].shape[0]
+
+    # Build label arrays
+    token_ids, y_labels, y_encoded, le = build_label_arrays(token_pos_map, vocab_size)
+    label_names = list(le.classes_)
+    print(f"\n Labeled tokens: {len(token_ids):,}")
+    print(f" POS categories: {len(label_names)}")
+
+    # Analyze each checkpoint
+    all_metrics = []
+    all_nearest_neighbors = {}
+    all_intra_inter = {}
+    all_silhouette = {}
+
+    for ckpt_name in sorted(checkpoint_embeddings.keys(), key=lambda x: (len(x), x)):
+        print(f"\n{'='*60}")
+        print(f"Analyzing: {ckpt_name}")
+        print(f"{'='*60}")
+        
+        emb = checkpoint_embeddings[ckpt_name]
+        
+        # Standardize embeddings
+        scaler = StandardScaler()
+        emb_scaled = scaler.fit_transform(emb)
+        
+        # PCA dimensionality reduction
+        n_pca = min(PCA_DIM, emb_scaled.shape[1])
+        pca = PCA(n_components=n_pca, random_state=42)
+        emb_pca = pca.fit_transform(emb_scaled)
+
+        print(f"  PCA reduced to {n_pca} dimensions (var: {pca.explained_variance_ratio_.sum():.3f})")
+        
+        # Get labeled token features
+        X_labeled = emb_pca[token_ids]
+        
+        # Compute probes
+        probe_metrics = compute_probes_with_split(X_labeled, y_labels, test_size=args.test_split)
+
+        print(f"  Probing Results:")
+        if probe_metrics['split_used']:
+            print(f"    k-NN  - Train: {probe_metrics['knn_train']:.4f}, Test: {probe_metrics['knn_test']:.4f}")
+            print(f"    LR    - Train: {probe_metrics['lr_train']:.4f}, Test: {probe_metrics['lr_test']:.4f}")
+        else:
+            print(f"    k-NN: {probe_metrics['knn_train']:.4f} (no split)")
+            print(f"    LR:   {probe_metrics['lr_train']:.4f} (no split)")
+        
+        # Compute silhouette scores
+        silhouette_results = compute_silhouette_per_pos(X_labeled, y_encoded, label_names)
+        print(f"  Silhouette (overall): {silhouette_results.get('overall_silhouette', np.nan):.4f}")
+
+        # Compute intra/inter-class cosine similarity
+        intra_inter = compute_intra_inter_cosine(emb_pca, token_ids, y_labels)
+        
+        # Get nearest neighbors for exemplar words
+        nearest_neighbors = get_nearest_neighbors(emb_scaled, tokenizer, args.exemplar_words, top_k=args.top_k)
+        
+        # Create UMAP visualization
+        umap_path = Path(args.output_dir) / f"umap_{ckpt_name}.png"
+        plot_umap_visualization(emb_pca, token_ids, y_labels, umap_path, ckpt_name, probe_metrics)
+
+        # Store results
+        metrics = {
+            'checkpoint': ckpt_name,
+            'knn_train': probe_metrics['knn_train'],
+            'knn_test': probe_metrics.get('knn_test'),
+            'lr_train': probe_metrics['lr_train'],
+            'lr_test': probe_metrics.get('lr_test'),
+            'split_used': probe_metrics['split_used'],
+            'silhouette_overall': silhouette_results.get('overall_silhouette'),
+            'pca_explained_variance': float(pca.explained_variance_ratio_.sum()),
+            'num_labeled_tokens': len(token_ids)
+        }
+
+        all_metrics.append(metrics)
+        all_nearest_neighbors[ckpt_name] = nearest_neighbors
+        all_intra_inter[ckpt_name] = intra_inter
+        all_silhouette[ckpt_name] = silhouette_results
+    
+    # Save all results
+    print(f"\n{'='*60}")
+    print("Saving results...")
+    print(f"{'='*60}")
+
+    with open(Path(args.output_dir) / "metrics.json", "w") as f:
+        json.dump(all_metrics, f, indent=2)
+    print("metrics.json")
+
+    with open(Path(args.output_dir) / "nearest_neighbors.json", "w") as f:
+        json.dump(all_nearest_neighbors, f, indent=2)
+    print("nearest_neighbors.json")
+    
+    with open(Path(args.output_dir) / "intra_inter_cosine.json", "w") as f:
+        json.dump(all_intra_inter, f, indent=2)
+    print("intra_inter_cosine.json")
+    
+    with open(Path(args.output_dir) / "silhouette_per_pos.json", "w") as f:
+        json.dump(all_silhouette, f, indent=2)
+    print("silhouette_per_pos.json")
+
+    # Generate trajectory plot
+    print("\nGenerating trajectory plot...")
+    traj_path = Path(args.output_dir) / "token_trajectories.png"
+    plot_trajectory(checkpoint_embeddings, args.exemplar_words, tokenizer, traj_path)
+    
+    # Generate temporal metrics plot
+    print("Generating temporal metrics plot...")
+    temporal_path = Path(args.output_dir) / "accuracy_over_time.png"
+    plot_temporal_metrics(all_metrics, temporal_path)
+
+    print(f"\n{'='*60}")
+    print("Analysis Complete!")
+    print(f"{'='*60}")
+    print(f"Results saved to: {args.output_dir}")
+    print(f"  - UMAP visualizations: umap_*.png")
+    print(f"  - Temporal plots: accuracy_over_time.png, token_trajectories.png")
+    print(f"  - Metrics: metrics.json")
+    print(f"  - Nearest neighbors: nearest_neighbors.json")
+    print(f"  - Similarity analysis: intra_inter_cosine.json, silhouette_per_pos.json")
+    print(f"{'='*60}\n")
+
+if __name__ == "__main__":
+    main()
