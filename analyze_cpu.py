@@ -18,7 +18,6 @@ import argparse
 from pathlib import Path
 from collections import defaultdict, Counter
 import numpy as np 
-import matplotlib as plt 
 import torch 
 import umap 
 import warnings 
@@ -30,6 +29,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
 
 
 warnings.filterwarnings('ignore', category=UserWarning) # Suppress user warning from appearing in the console 
@@ -168,7 +168,7 @@ def build_label_arrays(token_pos_map, vocab_size):
     return token_ids, y_labels, y_encoded, le 
 
 
-def compute_probes_with_split(X, y_labels, text_size=0.2, random_state=42):
+def compute_probes_with_split(X, y_labels, test_size=0.2, random_state=42):
     """
     Compute k-NN and logistic reqression probes with train/text splits 
     Handles cases of insufficient data or rare classes 
@@ -401,7 +401,7 @@ def plot_umap_visualization(emb_pca, token_ids, y_labels, output_path, checkpoin
             n_components = 2, # Reduce to 2D for visualization (x, y coordinate)
             random_state = 42, # Ensures reproducibility (same input → same output)
             n_neighbors = min(UMAP_N_NEIGHBORS, len(token_ids) - 1), # How many neighbors UMAP considers for local structure. Uses the configured value or fewer if there aren't enough tokens. Must be less than total points.
-            min_dis=UMAP_MIN_DIST # Minimum distance between points in 2D space (controls how tightly UMAP packs points)
+            min_dist=UMAP_MIN_DIST # Minimum distance between points in 2D space (controls how tightly UMAP packs points)
         )
 
         emb_2d = reducer.fit_transform(X_labeled)
@@ -643,10 +643,10 @@ def main():
     # Load training metadata
     metadata = load_training_metadata(args.checkpoint_dir)
     if metadata:
-        print(f"\n Training metadata:")
-        print(f"  Model: {metadata['model_config']['n_layer']} layers, "
-              f"{metadata['model_config']['n_embd']} dim")
-        print(f" Training: {metadata['training_config']['max_steps']} steps")
+        print(f"\nTraining metadata:")
+        print(f"  Model: {metadata["model_config"]["n_layer"]} layers, "
+              f"{metadata["model_config"]['n_embd']} dim")
+        print(f"  Training: {metadata['training_config']['max_steps']} steps")
     
     # Get checkpoints
     checkpoints = get_checkpoints(args.checkpoint_dir)

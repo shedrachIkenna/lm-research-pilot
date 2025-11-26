@@ -30,13 +30,23 @@ SEED = 42
 def save_training_metadata(output_dir: str, config: GPT2Config, args: TrainingArguments, dataset_size: int, num_examples: int):
     """
     Save training configuration and metadata for reproducibility 
+
+    Extract and store key model architecture details from the GPT2Config object: 
+    vocabulary size, maximum sequence length (n_positions), embedding dimension, 
+    number of transformer layers, and number of attention heads.
+
+    Extract and store training hyperparameters from the TrainingArguments object: 
+    learning rate, batch size per device, gradient accumulation steps, 
+    calculate the effective batch size (physical batch size × accumulation steps), 
+    maximum training steps, number of epochs, weight decay regularization parameter
+    
+    random seed for reproducibility.
+    Record dataset details: 
+    the dataset name (DATASET_NAME), 
+    configuration (DATASET_CONFIG), 
+    original dataset size, number of processed training examples, and the block size used for chunking sequences.
     """
     metadata = {
-        """
-        Extract and store key model architecture details from the GPT2Config object: 
-            vocabulary size, maximum sequence length (n_positions), embedding dimension, 
-            number of transformer layers, and number of attention heads.
-        """
         "model_config": {
             "vocab_size": config.vocab_size,
             "n_positions": config.n_positions,
@@ -44,13 +54,6 @@ def save_training_metadata(output_dir: str, config: GPT2Config, args: TrainingAr
             "n_layer": config.n_layer,
             "n_head": config.n_head,
         },
-        """
-        Extract and store training hyperparameters from the TrainingArguments object: 
-        learning rate, batch size per device, gradient accumulation steps, 
-        calculate the effective batch size (physical batch size × accumulation steps), 
-        maximum training steps, number of epochs, weight decay regularization parameter
-        random seed for reproducibility.
-        """
         "training_config": {
             "learning_rate": args.learning_rate,
             "per_device_batch_size": args.per_device_train_batch_size,
@@ -61,12 +64,6 @@ def save_training_metadata(output_dir: str, config: GPT2Config, args: TrainingAr
             "weight_decay": args.weight_decay,
             "seed": SEED,
         },
-        """
-        Record dataset details: 
-            the dataset name (DATASET_NAME), 
-            configuration (DATASET_CONFIG), 
-            original dataset size, number of processed training examples, and the block size used for chunking sequences.
-        """
         "dataset_info": {
             "name": DATASET_NAME,
             "config": DATASET_CONFIG,
