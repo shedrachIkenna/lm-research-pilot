@@ -164,29 +164,29 @@ lm-emergence-analysis/
 
 ---
 
-## 📈 Results & Visualizations
+## Results & Visualizations
 
 ### UMAP Visualization (Final Model)
 
-![UMAP Visualization](analysis_results_enhanced/umap_final.png)
+![UMAP Visualization](analysis_results/umap_final.png)
 
 *No visible clustering by POS category. Tokens of all grammatical types are randomly mixed in embedding space.*
 
 ### Probing Accuracy Over Training
 
-![Accuracy Over Time](analysis_results_enhanced/accuracy_over_time_enhanced.png)
+![Accuracy Over Time](analysis_results/accuracy_over_time.png)
 
 *Probing accuracy remains flat around 40-48% across all training steps, indicating no learning of POS structure.*
 
 ### Token Trajectories
 
-![Token Trajectories](analysis_results_enhanced/token_trajectories.png)
+![Token Trajectories](analysis_results/token_trajectories.png)
 
 *Individual tokens move in embedding space during training but show no systematic organization by category.*
 
 ### Detailed Metrics
 
-See [metrics_enhanced.json](analysis_results_enhanced/metrics_enhanced.json) for complete numerical results including:
+See [metrics.json](analysis_results/metrics.json) for complete numerical results including:
 - Per-checkpoint probing accuracy (train/test splits)
 - Silhouette scores (overall + per POS category)
 - Explained variance from PCA
@@ -195,7 +195,7 @@ See [metrics_enhanced.json](analysis_results_enhanced/metrics_enhanced.json) for
 
 ---
 
-## 🔍 Detailed Analysis
+## Detailed Analysis
 
 ### 1. Probing Classifiers
 
@@ -250,7 +250,7 @@ Expected:          cat, pet, animal, puppy
 
 ---
 
-## 🎓 Implications for Future Work
+## Implications for Future Work
 
 ### What Would Success Look Like?
 
@@ -282,7 +282,7 @@ python train_cpu.py --n-head 4 --block-size 64
 
 ---
 
-## 🧪 Experimental Design
+## Experimental Design
 
 ### Model Architecture
 ```python
@@ -323,7 +323,7 @@ All five metrics agree on absence of structure → **high confidence** in findin
 
 This project is inspired by:
 
-- **Papadimitriou et al. (2020)** - ["Vocabulary embeddings organize linguistic structure early in language model training"](https://arxiv.org/abs/2510.07613)
+- **Isabel Papadimitriou, Jacob Prince (2025)** - ["Vocabulary embeddings organize linguistic structure early in language model training"](https://arxiv.org/abs/2510.07613)
 
 ### Differences from Prior Work
 
