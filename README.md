@@ -319,14 +319,11 @@ All five metrics agree on absence of structure → **high confidence** in findin
 
 ---
 
-## 📚 Related Work
+## Related Work
 
 This project is inspired by:
 
-- **Papadimitriou et al. (2020)** - ["Learning Music Helps You Read: Using Transfer to Study Linguistic Structure in Language Models"](https://arxiv.org/abs/2004.14601)
-- **Hewitt & Manning (2019)** - ["A Structural Probe for Finding Syntax in Word Representations"](https://aclanthology.org/N19-1419/)
-- **Voita & Titov (2020)** - ["Information-Theoretic Probing with Minimum Description Length"](https://aclanthology.org/2020.acl-main.420/)
-- **Wei et al. (2022)** - ["Emergent Abilities of Large Language Models"](https://arxiv.org/abs/2206.07682)
+- **Papadimitriou et al. (2020)** - ["Vocabulary embeddings organize linguistic structure early in language model training"](https://arxiv.org/abs/2510.07613)
 
 ### Differences from Prior Work
 
