@@ -6,7 +6,7 @@
 
 > *An experimental pipeline for studying when and how linguistic structure emerges during transformer training*
 
-## 🎯 Overview
+## Overview
 
 This project investigates a fundamental question in language model interpretability: **At what point during training do neural networks develop internal representations organized by linguistic categories?**
 
