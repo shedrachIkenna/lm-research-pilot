@@ -6,6 +6,21 @@
 
 > *An experimental pipeline for studying when and how linguistic structure emerges during transformer training*
 
+<p align="center">
+  <img src="analysis_results/accuracy_over_time.png" alt="Probing accuracy remains flat across training" width="80%">
+</p>
+
+<p align="center">
+  <em>A minimal, reproducible pipeline for studying when linguistic structure emerges in language models</em>
+</p>
+
+---
+
+> **Key Finding:** No POS structure emerged in a 1-layer, 64-dim model trained for 500 steps, 
+> establishing baseline capacity requirements for linguistic emergence.
+
+---
+
 ## Overview
 
 This project investigates a fundamental question in language model interpretability: **At what point during training do neural networks develop internal representations organized by linguistic categories?**
