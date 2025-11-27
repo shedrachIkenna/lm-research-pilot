@@ -400,7 +400,7 @@ If you use this code or findings in your research, please cite:
   author = {Nwali, Shedrach Ikenna},
   title = {Linguistic Structure Emergence in Small Language Models: 
            Establishing Capacity Lower Bounds},
-  year = {2024},
+  year = {2025},
   url = {https://github.com/shedrachIkenna/lm-research-pilot}
 }
 ```
