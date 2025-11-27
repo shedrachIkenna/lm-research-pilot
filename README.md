@@ -16,15 +16,13 @@ By training small GPT-2 style models from scratch with frequent checkpointing, w
 
 ---
 
-## 🔬 Motivation
+## Motivation
 
-Recent work in interpretability (e.g., [Papadimitriou et al.](https://arxiv.org/abs/2010.02480), [Hewitt & Manning, 2019](https://aclanthology.org/N19-1419/)) shows that large pretrained models contain rich linguistic structure. However, **when and how** this structure develops during training remains poorly understood. 
-
-This project provides a **minimal, reproducible framework** for studying emergence dynamics at a scale accessible to individual researchers (CPU-only, <1 hour runtime).
+Recent work in interpretability (e.g., [Isabel Papadimitriou, Jacob Prince](https://arxiv.org/abs/2510.07613)) shows how vocabulary embeddings organize linguistic struture early in language model training. Howeever, this project provides a **minimal, reproducible framework** for studying the emergence dynamics at a scale accessible to individual researchers (CPU-only, <1 hour runtime).
 
 ---
 
-## 📊 Key Findings
+## Key Findings
 
 ### Summary
 **No linguistic structure emerged** in a 1-layer, 64-dimension GPT-2 model trained for 500 steps on 2,000 WikiText examples.
@@ -50,7 +48,7 @@ These **negative results** are scientifically informative:
 
 ---
 
-## 🛠️ Pipeline Architecture
+## Pipeline Architecture
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ 1. BUILD POS MAP (build_token_pos_map_cpu.py)              │
@@ -65,7 +63,7 @@ These **negative results** are scientifically informative:
 └─────────────────────────────────────────────────────────────┘
                            ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 3. ANALYZE EMBEDDINGS (analyze_cpu_enhanced.py)            │
+│ 3. ANALYZE EMBEDDINGS (analyze_cpu.py)            │
 │    Extract embeddings → UMAP, probing, silhouette, etc.    │
 │    Output: Visualizations + comprehensive metrics          │
 └─────────────────────────────────────────────────────────────┘
@@ -83,7 +81,7 @@ These **negative results** are scientifically informative:
    - Saves model every 100 steps
    - Records full hyperparameter metadata
 
-3. **`analyze_cpu_enhanced.py`** - Multi-metric embedding analysis
+3. **`analyze_cpu.py`** - Multi-metric embedding analysis
    - UMAP/PCA visualization colored by POS
    - k-NN and linear probing classifiers
    - Silhouette scores per POS category
@@ -103,12 +101,12 @@ These **negative results** are scientifically informative:
 ### Installation
 ```bash
 # 1. Clone repository
-git clone https://github.com/yourusername/lm-emergence-analysis.git
-cd lm-emergence-analysis
+git clone https://github.com/shedrachikenna/lm-research-pilot.git
+cd lm-research-pilot
 
 # 2. Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: .\venv\Scripts\Activate.ps1
+venv\Scripts\Activate
 
 # 3. Install dependencies
 pip install -r requirements.txt
@@ -117,31 +115,28 @@ python -m spacy download en_core_web_sm
 
 ### Run Complete Pipeline
 ```bash
-# Step 1: Build POS mapping (~5-10 min)
+# Step 1: Build POS mapping (~2-3 min)
 python build_token_pos_map_cpu.py
 
-# Step 2: Train model (~15-20 min)
+# Step 2: Train model (~5-10 min)
 python train_cpu.py
 
 # Step 3: Analyze embeddings (~5-10 min)
-python analyze_cpu_enhanced.py
+python analyze_cpu.py
 ```
 
-**Total runtime:** ~30-40 minutes on a typical laptop
+**Total runtime:** ~10-20 minutes on a typical laptop
 
 ---
 
 ## 📂 Repository Structure
 ```
-lm-emergence-analysis/
+lm-research-pilot/
 ├── build_token_pos_map_cpu.py    # POS mapping creation
 ├── train_cpu.py                  # Model training
-├── analyze_cpu.py                # Basic analysis
-├── analyze_cpu_enhanced.py       # Extended analysis
+├── analyze_cpu.py                # Analysis results 
 ├── requirements.txt              # Python dependencies
-├── README.md                     # This file
-├── RUN_INSTRUCTIONS.md           # Detailed setup guide
-├── SCRIPT_DESCRIPTIONS.md        # Technical documentation
+├── README.md                     # This file 
 │
 ├── token_pos_map.json           # Generated: token→POS mapping
 │
@@ -152,11 +147,11 @@ lm-emergence-analysis/
 │   ├── final/
 │   └── training_metadata.json
 │
-└── analysis_results_enhanced/   # Generated: analysis outputs
+└── analysis_results/   # Generated: analysis outputs
     ├── umap_checkpoint-*.png
     ├── token_trajectories.png
-    ├── accuracy_over_time_enhanced.png
-    ├── metrics_enhanced.json
+    ├── accuracy_over_time.png
+    ├── metrics.json
     ├── nearest_neighbors.json
     ├── intra_inter_cosine.json
     └── silhouette_per_pos.json
