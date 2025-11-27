@@ -349,7 +349,7 @@ torch.set_num_threads(2)
 ```
 Python: 3.8+
 torch: 2.9.1
-transformers==4.57.1
+transformers: 4.57.1
 spacy: 3.8.9
 scikit-learn: 1.7.2
 umap-learn: 0.5.9.post2
