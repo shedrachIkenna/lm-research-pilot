@@ -345,14 +345,15 @@ torch.set_num_threads(2)
 - `token_pos_map.json` - Exact POS assignments used
 - `metrics.json` - All numerical results
 
-### Version Information
+### Core Version Information
 ```
 Python: 3.8+
-PyTorch: 2.0.0
-Transformers: 4.30.0
-spaCy: 3.5.0
-scikit-learn: 1.2.0
-umap-learn: 0.5.3
+torch: 2.9.1
+transformers==4.57.1
+spacy: 3.8.9
+scikit-learn: 1.7.2
+umap-learn: 0.5.9.post2
+datasets: 4.4.1
 ```
 
 ---
